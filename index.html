@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PANKH | College Event Registration & Check-In System</title>
+  <meta name="description" content="College Club Event Registration and Real-Time Reverse QR Code Check-In System powered by Firebase Firestore." />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- QR Code Generator Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- HTML5 QR Scanner Library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body class="light-theme">
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">PANKH CLUB</h1>
+          <span class="brand-subtitle">Event Pass & Check-In Portal</span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs" role="tablist">
+        <button class="nav-tab active" id="tab-register" data-target="view-register" role="tab" aria-selected="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="8.5" cy="7.5" r="4"/>
+            <line x1="20" y1="8" x2="20" y2="14"/>
+            <line x1="23" y1="11" x2="17" y2="11"/>
+          </svg>
+          <span>Student Registration</span>
+        </button>
+
+        <button class="nav-tab" id="tab-scanner" data-target="view-scanner" role="tab" aria-selected="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+            <circle cx="12" cy="12" r="1"/>
+          </svg>
+          <span>Volunteer Scanner</span>
+        </button>
+
+        <button class="nav-tab" id="tab-admin" data-target="view-admin" role="tab" aria-selected="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M3 9h18"/>
+            <path d="M9 21V9"/>
+          </svg>
+          <span>Admin Dashboard</span>
+          <span class="badge-alert" id="nav-duplicate-badge" style="display: none;">0</span>
+        </button>
+      </nav>
+
+      <!-- Connection / Mode Indicator -->
+      <div class="header-actions">
+        <div class="conn-status" id="connection-status-pill">
+          <span class="status-dot"></span>
+          <span class="status-label" id="status-label">Initializing...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Global Duplicate Alert Banner (Real-time Broadcast on Admin) -->
+  <div class="duplicate-alert-banner" id="global-duplicate-banner" style="display: none;">
+    <div class="alert-content">
+      <div class="alert-icon-pulse">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <div class="alert-text">
+        <strong class="alert-headline">SECURITY WARNING: DUPLICATE ENTRY ATTEMPT</strong>
+        <p class="alert-details" id="duplicate-banner-message">USN <strong>1MS21CS001</strong> attempted entry multiple times!</p>
+      </div>
+    </div>
+    <div class="alert-actions">
+      <button class="btn btn-secondary btn-sm" id="btn-silence-audio">Mute Audio</button>
+      <button class="btn btn-danger btn-sm" id="btn-dismiss-alert">Dismiss Alert</button>
+    </div>
+  </div>
+
+  <main class="main-content">
+    <!-- ========================================== -->
+    <!-- SECTION 1: STUDENT REGISTRATION VIEW      -->
+    <!-- ========================================== -->
+    <section class="app-view active" id="view-register">
+      <div class="container container-sm">
+        
+        <!-- Registration Form Card -->
+        <div class="card form-card" id="registration-form-card">
+          <div class="card-header">
+            <div class="pill-tag">College Club Event</div>
+            <h2 class="card-title">Student Registration</h2>
+            <p class="card-desc">Enter your college details to secure your event pass and generate your entrance QR code.</p>
+          </div>
+
+          <form id="student-registration-form" novalidate>
+            <!-- USN Input -->
+            <div class="form-group">
+              <label for="reg-usn" class="form-label">
+                University Seat Number (USN) <span class="required">*</span>
+              </label>
+              <div class="input-wrapper">
+                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="16" rx="2"/>
+                  <line x1="7" y1="8" x2="17" y2="8"/>
+                  <line x1="7" y1="12" x2="13" y2="12"/>
+                  <line x1="7" y1="16" x2="10" y2="16"/>
+                </svg>
+                <input 
+                  type="text" 
+                  id="reg-usn" 
+                  class="form-input" 
+                  placeholder="e.g. 1MS21CS045 or 2SD22EC012" 
+                  autocomplete="off" 
+                  maxlength="15" 
+                  required 
+                />
+              </div>
+              <span class="form-hint">Standard college USN format (e.g., 1MS21CS045). Auto-uppercased.</span>
+              <span class="form-error" id="error-usn">Please enter a valid USN (e.g., 1MS21CS045 or 4VP20IS001).</span>
+            </div>
+
+            <!-- Full Name Input -->
+            <div class="form-group">
+              <label for="reg-name" class="form-label">
+                Full Name <span class="required">*</span>
+              </label>
+              <div class="input-wrapper">
+                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <input 
+                  type="text" 
+                  id="reg-name" 
+                  class="form-input" 
+                  placeholder="e.g. Sarah Jenkins" 
+                  autocomplete="name" 
+                  maxlength="50" 
+                  required 
+                />
+              </div>
+              <span class="form-error" id="error-name">Please enter your full name.</span>
+            </div>
+
+            <div class="form-grid-2">
+              <!-- Year Dropdown (1, 2, 3, 4) -->
+              <div class="form-group">
+                <label for="reg-year" class="form-label">
+                  Academic Year <span class="required">*</span>
+                </label>
+                <div class="select-wrapper">
+                  <select id="reg-year" class="form-select" required>
+                    <option value="" disabled selected>Select Year</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                  </select>
+                  <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </div>
+                <span class="form-error" id="error-year">Please select your year.</span>
+              </div>
+
+              <!-- Branch Input / Select -->
+              <div class="form-group">
+                <label for="reg-branch" class="form-label">
+                  Branch / Dept <span class="required">*</span>
+                </label>
+                <div class="select-wrapper">
+                  <select id="reg-branch" class="form-select" required>
+                    <option value="" disabled selected>Select Department</option>
+                    <option value="Computer Science (CSE)">Computer Science (CSE)</option>
+                    <option value="Information Science (ISE)">Information Science (ISE)</option>
+                    <option value="Artificial Intelligence (AIML)">Artificial Intelligence (AIML)</option>
+                    <option value="Electronics & Comm (ECE)">Electronics & Comm (ECE)</option>
+                    <option value="Electrical & Electronics (EEE)">Electrical & Electronics (EEE)</option>
+                    <option value="Mechanical Engg (ME)">Mechanical Engg (ME)</option>
+                    <option value="Civil Engineering (CV)">Civil Engineering (CV)</option>
+                    <option value="Biotechnology (BT)">Biotechnology (BT)</option>
+                    <option value="Other">Other / Allied Branches</option>
+                  </select>
+                  <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </div>
+                <span class="form-error" id="error-branch">Please select your branch.</span>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-registration">
+              <span class="btn-text">Register & Generate Pass</span>
+              <span class="btn-spinner" style="display: none;"></span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Generated Pass / QR Code Modal Card (Hidden initially) -->
+        <div class="card ticket-card" id="registration-ticket-card" style="display: none;">
+          <div class="ticket-badge-pill">OFFICIAL EVENT PASS</div>
+          
+          <div class="ticket-header">
+            <div class="club-mark">PANKH CLUB FEST</div>
+            <h3 class="ticket-event-name">Annual Gala & Tech Conclave</h3>
+            <p class="ticket-subtitle">Present this QR code to the entrance volunteers at the door.</p>
+          </div>
+
+          <div class="ticket-body">
+            <!-- QR Code Display Area -->
+            <div class="qr-code-frame">
+              <div id="qrcode-canvas-container" class="qr-container"></div>
+              <div class="qr-overlay-scanline"></div>
+            </div>
+
+            <!-- Unique Code Display -->
+            <div class="unique-code-box">
+              <span class="code-label">TICKET PASS CODE</span>
+              <div class="code-val-row">
+                <span class="unique-code-value" id="ticket-unique-code">EVT-XXXXXX</span>
+                <button type="button" class="btn-icon-copy" id="btn-copy-code" title="Copy code">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Attendee Details Summary -->
+            <div class="ticket-details-grid">
+              <div class="detail-item">
+                <span class="detail-label">STUDENT NAME</span>
+                <span class="detail-value" id="ticket-student-name">Jane Doe</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">USN</span>
+                <span class="detail-value font-mono" id="ticket-student-usn">1MS21CS045</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">YEAR</span>
+                <span class="detail-value" id="ticket-student-year">3rd Year</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">BRANCH</span>
+                <span class="detail-value" id="ticket-student-branch">CSE</span>
+              </div>
+            </div>
+
+            <!-- Instructions Notice -->
+            <div class="ticket-alert-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <span><strong>IMPORTANT:</strong> Please take a screenshot of this pass or download it below. Bring it to the event gate for check-in!</span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="ticket-actions">
+              <button type="button" class="btn btn-primary" id="btn-download-pass">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Save / Download Pass</span>
+              </button>
+              <button type="button" class="btn btn-secondary" id="btn-register-another">
+                <span>Register Another Student</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 2: VOLUNTEER SCANNER VIEW         -->
+    <!-- ========================================== -->
+    <section class="app-view" id="view-scanner">
+      <div class="container container-sm">
+        
+        <div class="card scanner-card">
+          <div class="card-header">
+            <div class="pill-tag pill-success">Gate Check-In Portal</div>
+            <h2 class="card-title">Volunteer QR Scanner</h2>
+            <p class="card-desc">Scan attendee QR passes at the entrance. Each pass is valid for one-time admission.</p>
+          </div>
+
+          <!-- Camera & Scanner Control Box -->
+          <div class="scanner-controls-bar">
+            <div class="camera-select-wrap">
+              <select id="camera-selection" class="form-select form-select-sm">
+                <option value="">Detecting cameras...</option>
+              </select>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-toggle-camera">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              <span id="btn-toggle-camera-text">Start Camera</span>
+            </button>
+          </div>
+
+          <!-- Video Viewport / Scanner Target -->
+          <div class="scanner-viewport-container">
+            <div id="qr-reader" class="qr-reader-window"></div>
+            
+            <div class="scanner-guide-box" id="scanner-reticle">
+              <div class="corner corner-tl"></div>
+              <div class="corner corner-tr"></div>
+              <div class="corner corner-bl"></div>
+              <div class="corner corner-br"></div>
+              <div class="laser-scanner-line"></div>
+            </div>
+
+            <!-- Fullscreen Flash Overlay for Results -->
+            <div class="scan-result-overlay" id="scan-result-overlay" style="display: none;">
+              <!-- 1. Granted Screen -->
+              <div class="result-modal modal-granted" id="result-granted" style="display: none;">
+                <div class="result-icon-circle">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+                <h3 class="result-title">ACCESS GRANTED</h3>
+                <span class="result-badge">First-Time Admission (Entry #1)</span>
+                
+                <div class="result-attendee-card">
+                  <div class="res-row">
+                    <span class="res-lbl">Student Name:</span>
+                    <strong class="res-val" id="granted-name">Sarah Jenkins</strong>
+                  </div>
+                  <div class="res-row">
+                    <span class="res-lbl">USN:</span>
+                    <strong class="res-val font-mono" id="granted-usn">1MS21CS045</strong>
+                  </div>
+                  <div class="res-row">
+                    <span class="res-lbl">Academic Year:</span>
+                    <strong class="res-val" id="granted-year">3rd Year</strong>
+                  </div>
+                  <div class="res-row">
+                    <span class="res-lbl">Department:</span>
+                    <strong class="res-val" id="granted-branch">CSE</strong>
+                  </div>
+                </div>
+
+                <button class="btn btn-primary btn-block btn-resume-scan" id="btn-next-scan-granted">
+                  Next Attendee (<span id="granted-timer">3</span>s)
+                </button>
+              </div>
+
+              <!-- 2. Duplicate Warning Screen -->
+              <div class="result-modal modal-duplicate" id="result-duplicate" style="display: none;">
+                <div class="result-icon-circle-pulse">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  </svg>
+                </div>
+                <h3 class="result-title">WARNING: DUPLICATE ENTRY</h3>
+                <span class="result-badge-danger" id="dup-attempt-count-badge">Attempt #2 Detected!</span>
+                
+                <p class="duplicate-warning-notice">
+                  This QR code was already scanned. Admin organizers have been notified in real-time.
+                </p>
+
+                <div class="result-attendee-card alert-attendee-card">
+                  <div class="res-row">
+                    <span class="res-lbl">Registered Student:</span>
+                    <strong class="res-val" id="duplicate-name">Jane Doe</strong>
+                  </div>
+                  <div class="res-row">
+                    <span class="res-lbl">USN:</span>
+                    <strong class="res-val font-mono" id="duplicate-usn">1MS21CS045</strong>
+                  </div>
+                  <div class="res-row">
+                    <span class="res-lbl">Total Attempts:</span>
+                    <strong class="res-val text-danger" id="duplicate-count">2</strong>
+                  </div>
+                </div>
+
+                <button class="btn btn-danger btn-block btn-resume-scan" id="btn-next-scan-duplicate">
+                  Acknowledge & Resume Scanner
+                </button>
+              </div>
+
+              <!-- 3. Unrecognized Code Screen -->
+              <div class="result-modal modal-invalid" id="result-invalid" style="display: none;">
+                <div class="result-icon-circle-invalid">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                  </svg>
+                </div>
+                <h3 class="result-title">INVALID PASS</h3>
+                <p class="result-desc">Code <strong id="invalid-code-scanned">EVT-XXXX</strong> not found in database.</p>
+                <button class="btn btn-secondary btn-block btn-resume-scan" id="btn-next-scan-invalid">
+                  Resume Scanner
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Manual Code Fallback Input (for cracked screens or manual check-in) -->
+          <div class="manual-checkin-section">
+            <span class="manual-label">Or enter unique code manually:</span>
+            <form id="form-manual-checkin" class="manual-input-row">
+              <input 
+                type="text" 
+                id="manual-code-input" 
+                class="form-input form-input-sm font-mono" 
+                placeholder="e.g. EVT-8X2P" 
+                maxlength="15" 
+                required 
+              />
+              <button type="submit" class="btn btn-secondary btn-sm" id="btn-manual-submit">
+                Check In Code
+              </button>
+            </form>
+          </div>
+
+          <!-- Recent Scans Live Stream -->
+          <div class="recent-scans-block">
+            <div class="recent-scans-header">
+              <span class="recent-title">Recent Gate Activity</span>
+              <span class="recent-count" id="scan-count-chip">0 scanned</span>
+            </div>
+            <div class="recent-scans-list" id="recent-scans-container">
+              <div class="empty-recent-state">No scans recorded in this volunteer session yet.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 3: ADMIN DASHBOARD VIEW           -->
+    <!-- ========================================== -->
+    <section class="app-view" id="view-admin">
+      <div class="container container-lg">
+        
+        <!-- Live Counters Header Grid -->
+        <div class="stats-overview-grid">
+          <div class="stat-card">
+            <div class="stat-icon-wrap bg-blue-50 text-blue-600">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total Registrations</span>
+              <h3 class="stat-number" id="stat-total-reg">0</h3>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon-wrap bg-emerald-50 text-emerald-600">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Active Check-Ins</span>
+              <h3 class="stat-number text-emerald" id="stat-total-checked">0</h3>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon-wrap bg-amber-50 text-amber-600">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Pending Arrival</span>
+              <h3 class="stat-number text-amber" id="stat-total-pending">0</h3>
+            </div>
+          </div>
+
+          <div class="stat-card stat-card-alert">
+            <div class="stat-icon-wrap bg-rose-50 text-rose-600">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Duplicate Alerts</span>
+              <h3 class="stat-number text-rose" id="stat-total-duplicates">0</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Management Card -->
+        <div class="card dashboard-card">
+          <!-- Toolbar & Controls -->
+          <div class="dashboard-toolbar">
+            <div class="toolbar-left">
+              <h2 class="section-title">Event Registrations Live Table</h2>
+              <span class="live-pulse-badge">
+                <span class="pulse-dot"></span> Real-Time Firestore Sync
+              </span>
+            </div>
+
+            <div class="toolbar-right">
+              <!-- Search Input -->
+              <div class="search-box">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input 
+                  type="text" 
+                  id="admin-search-input" 
+                  class="search-input" 
+                  placeholder="Search by USN, Name, Code..." 
+                />
+              </div>
+
+              <!-- Export Button -->
+              <button class="btn btn-secondary btn-sm" id="btn-export-csv" title="Export attendee records to CSV">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Export CSV</span>
+              </button>
+
+              <!-- Seed / Test Data Button -->
+              <button class="btn btn-outline btn-sm" id="btn-seed-sample" title="Insert 4 sample students for quick testing">
+                <span>+ Sample Data</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Segregation & Year Filter Bar -->
+          <div class="segregation-bar">
+            <div class="filter-group">
+              <span class="filter-label">Segregate by Year:</span>
+              <div class="year-filter-chips">
+                <button class="chip-filter active" data-year="all">All Registrations</button>
+                <button class="chip-filter chip-year-1" data-year="1">
+                  <span class="chip-dot" style="background:#4A90E2;"></span> 1st Year (<span id="count-year-1">0</span>)
+                </button>
+                <button class="chip-filter chip-year-2" data-year="2">
+                  <span class="chip-dot" style="background:#2E7D32;"></span> 2nd Year (<span id="count-year-2">0</span>)
+                </button>
+                <button class="chip-filter chip-year-3" data-year="3">
+                  <span class="chip-dot" style="background:#E65100;"></span> 3rd Year (<span id="count-year-3">0</span>)
+                </button>
+                <button class="chip-filter chip-year-4" data-year="4">
+                  <span class="chip-dot" style="background:#C62828;"></span> 4th Year (<span id="count-year-4">0</span>)
+                </button>
+              </div>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="filter-group">
+              <span class="filter-label">Status:</span>
+              <select id="admin-status-filter" class="form-select form-select-sm">
+                <option value="all">All Statuses</option>
+                <option value="checked-in">Checked In Only</option>
+                <option value="pending">Not Arrived (0 Entries)</option>
+                <option value="duplicates">Duplicate Alerts Only</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Color Coding Legend -->
+          <div class="color-coding-legend">
+            <span class="legend-title">CSS Row Color Legend:</span>
+            <div class="legend-item"><span class="legend-swatch" style="background: #E3F2FD; border: 1px solid #BBDEFB;"></span> 1st Year (#E3F2FD)</div>
+            <div class="legend-item"><span class="legend-swatch" style="background: #E8F5E9; border: 1px solid #C8E6C9;"></span> 2nd Year (#E8F5E9)</div>
+            <div class="legend-item"><span class="legend-swatch" style="background: #FFF3E0; border: 1px solid #FFE0B2;"></span> 3rd Year (#FFF3E0)</div>
+            <div class="legend-item"><span class="legend-swatch" style="background: #FFEBEE; border: 1px solid #FFCDD2;"></span> 4th Year (#FFEBEE)</div>
+          </div>
+
+          <!-- Registrations Table Container -->
+          <div class="table-responsive">
+            <table class="data-table" id="registrations-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">#</th>
+                  <th>USN</th>
+                  <th>Student Name</th>
+                  <th>Year</th>
+                  <th>Branch / Dept</th>
+                  <th>Unique Code</th>
+                  <th>Entry Count</th>
+                  <th>Status</th>
+                  <th style="width: 130px; text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="registrations-tbody">
+                <tr>
+                  <td colspan="9" class="table-loading-row">
+                    <div class="table-spinner"></div>
+                    <span>Listening to Firestore collection <code>event_registrations</code>...</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-footer">
+            <span class="records-counter" id="table-record-count">Showing 0 of 0 records</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Pass Modal for Admin inspection -->
+  <div class="modal-backdrop" id="admin-pass-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Student Event Ticket</h3>
+        <button class="btn-close-modal" id="btn-close-pass-modal">&times;</button>
+      </div>
+      <div class="modal-body" id="admin-pass-modal-body">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio elements & Notification Audio Synthesis -->
+  <!-- We synthesize high-fidelity alert sounds via Web Audio API in app.js -->
+
+  <!-- App Main Logic (ES Module) -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
