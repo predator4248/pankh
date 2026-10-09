@@ -1,0 +1,10 @@
+{
+  "name": "pankh",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PANKH Club - College Event Registration & Check-In Portal",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  }
+}
