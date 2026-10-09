@@ -4,6 +4,7 @@
   "private": true,
   "description": "PANKH Club - College Event Registration & Check-In Portal",
   "scripts": {
+    "build": "echo 'Static site ready'",
     "start": "npx serve .",
     "dev": "npx serve ."
   }

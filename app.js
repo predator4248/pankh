@@ -395,22 +395,24 @@ function setupNavigation() {
     });
   });
 
-  // Handle URL hash changes (#register, #scanner, #admin)
-  function handleHash() {
-    const hash = window.location.hash.replace("#", "");
-    if (hash === "scanner") {
+  // Handle URL hash & clean path changes (#register, #scanner, #admin or /scanner, /admin)
+  function handleRoute() {
+    const hash = (window.location.hash || "").replace("#", "").toLowerCase();
+    const path = (window.location.pathname || "").replace(/^\//, "").toLowerCase();
+    const route = hash || path;
+
+    if (route.includes("scanner")) {
       switchTab("view-scanner");
-    } else if (hash === "admin") {
+    } else if (route.includes("admin")) {
       switchTab("view-admin");
     } else {
       switchTab("view-register");
     }
   }
 
-  window.addEventListener("hashchange", handleHash);
-  if (window.location.hash) {
-    handleHash();
-  }
+  window.addEventListener("hashchange", handleRoute);
+  window.addEventListener("popstate", handleRoute);
+  handleRoute();
 }
 
 /* ==========================================================================
