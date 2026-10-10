@@ -32,12 +32,13 @@ import {
    4. Copy the firebaseConfig object into here.
    ========================================================================== */
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBTjGfIAXYAy46YUHw5EeYCM21AIHdlIVA",
+  authDomain: "pankh-3f788.firebaseapp.com",
+  projectId: "pankh-3f788",
+  storageBucket: "pankh-3f788.firebasestorage.app",
+  messagingSenderId: "36776778055",
+  appId: "1:36776778055:web:5f28473229cec43b725462",
+  measurementId: "G-457Q88DRNH"
 };
 
 // Check if credentials are placeholders
