@@ -1592,3 +1592,147 @@ tr.row-year-4 td {
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   ADMIN LOCK SCREEN & AUTHENTICATION (METHOD B)
+   ========================================================================== */
+.admin-lock-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 480px;
+  padding: 2.5rem 1rem;
+  animation: fade-in 0.35s ease-out;
+}
+
+.admin-lock-card {
+  max-width: 440px;
+  width: 100%;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08), 0 0 1px 1px rgba(15, 23, 42, 0.04);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.admin-lock-card.lock-shake {
+  animation: lock-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes lock-shake {
+  10%, 90% { transform: translate3d(-2px, 0, 0); }
+  20%, 80% { transform: translate3d(4px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+  40%, 60% { transform: translate3d(6px, 0, 0); }
+}
+
+.lock-icon-badge {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 1.25rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-light) 0%, #e0e7ff 100%);
+  color: var(--primary);
+  border-radius: 50%;
+  border: 2px solid #c7d2fe;
+  box-shadow: 0 8px 16px -4px rgba(79, 70, 229, 0.2);
+}
+
+.lock-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.lock-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 1.75rem;
+}
+
+.lock-form {
+  text-align: left;
+}
+
+.password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrap .form-input {
+  padding-right: 2.75rem;
+  font-size: 0.95rem;
+}
+
+.btn-toggle-password {
+  position: absolute;
+  right: 0.75rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  border-radius: 0.375rem;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-toggle-password:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-surface);
+}
+
+.lock-error-text {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--danger);
+  margin-top: 0.4rem;
+  animation: fade-in 0.2s ease;
+}
+
+.lock-footer {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lock-footer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn-lock-dashboard {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-color: #fca5a5 !important;
+  color: var(--danger) !important;
+  background-color: #fef2f2 !important;
+}
+
+.btn-lock-dashboard:hover {
+  background-color: #fee2e2 !important;
+  border-color: #f87171 !important;
+  color: var(--danger-dark) !important;
+}
+

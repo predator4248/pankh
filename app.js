@@ -49,7 +49,47 @@ let db = null;
 let isDemoMode = !isConfigured;
 
 /* ==========================================================================
-   2. AUDIO SYNTHESIZER (WEB AUDIO API)
+   2. ADMIN ACCESS CONTROL CONFIGURATION (METHOD B)
+   You can change your secret admin password right here at any time!
+   ========================================================================== */
+export const ADMIN_SECRET_PASSWORD = "pankh@admin2026";
+export const ADMIN_PASSWORD_HASH = "c90c7f41f158f08b3e3244a7425d382df1e148e862f9451ccf7311ed155c213f";
+const ADMIN_AUTH_SESSION_KEY = "pankh_admin_authenticated";
+
+async function computeSha256Hex(str) {
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return "";
+  }
+}
+
+async function verifyAdminPassword(input) {
+  const trimmed = (input || "").trim();
+  if (!trimmed) return false;
+  if (trimmed === ADMIN_SECRET_PASSWORD) return true;
+  const hash = await computeSha256Hex(trimmed);
+  return hash === ADMIN_PASSWORD_HASH;
+}
+
+function isAdminAuthenticated() {
+  return sessionStorage.getItem(ADMIN_AUTH_SESSION_KEY) === "true";
+}
+
+function setAdminAuthenticated(status) {
+  if (status) {
+    sessionStorage.setItem(ADMIN_AUTH_SESSION_KEY, "true");
+  } else {
+    sessionStorage.removeItem(ADMIN_AUTH_SESSION_KEY);
+  }
+}
+
+/* ==========================================================================
+   3. AUDIO SYNTHESIZER (WEB AUDIO API)
    Generates real-time sound effects without external audio file dependencies.
    ========================================================================== */
 let audioCtx = null;
@@ -326,6 +366,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupRegistrationForm();
   setupScannerView();
   setupAdminDashboard();
+  setupAdminAuth();
   listenToDatabase();
 
   // Listen to audio unlocks on initial click
@@ -360,6 +401,34 @@ function setupConnectionStatus() {
   }
 }
 
+// Update Admin View Visibility based on Session Auth State
+function updateAdminAuthStateUI() {
+  const lockScreen = document.getElementById("admin-lock-screen");
+  const authContent = document.getElementById("admin-authenticated-content");
+  const passInput = document.getElementById("admin-pass-input");
+  const errorText = document.getElementById("admin-pass-error");
+
+  if (!lockScreen || !authContent) return;
+
+  if (isAdminAuthenticated()) {
+    lockScreen.style.display = "none";
+    authContent.style.display = "block";
+    updateDashboardCounters();
+    renderRegistrationsTable();
+  } else {
+    lockScreen.style.display = "flex";
+    authContent.style.display = "none";
+    if (passInput) {
+      passInput.value = "";
+      setTimeout(() => passInput.focus(), 80);
+    }
+    if (errorText) {
+      errorText.style.display = "none";
+      errorText.textContent = "";
+    }
+  }
+}
+
 // Navigation Tab Switcher with Hash Sync
 function setupNavigation() {
   const tabs = document.querySelectorAll(".nav-tab");
@@ -375,6 +444,11 @@ function setupNavigation() {
     views.forEach(view => {
       view.classList.toggle("active", view.id === targetId);
     });
+
+    // Admin view auth state handling
+    if (targetId === "view-admin") {
+      updateAdminAuthStateUI();
+    }
 
     // Camera auto-handling
     if (targetId === "view-scanner") {
@@ -930,6 +1004,79 @@ function setupAdminDashboard() {
   modalPass.addEventListener("click", (e) => {
     if (e.target === modalPass) modalPass.style.display = "none";
   });
+}
+
+// Admin Authentication Controller (Method B)
+function setupAdminAuth() {
+  const formAuth = document.getElementById("form-admin-auth");
+  const passInput = document.getElementById("admin-pass-input");
+  const btnToggle = document.getElementById("btn-toggle-admin-pass");
+  const errorText = document.getElementById("admin-pass-error");
+  const lockCard = document.querySelector(".admin-lock-card");
+  const btnLock = document.getElementById("btn-admin-lock");
+  const btnLogin = document.getElementById("btn-admin-login");
+
+  // Show/Hide password toggle
+  if (btnToggle && passInput) {
+    btnToggle.addEventListener("click", () => {
+      const isPassword = passInput.type === "password";
+      passInput.type = isPassword ? "text" : "password";
+      const iconEye = btnToggle.querySelector(".icon-eye");
+      const iconEyeOff = btnToggle.querySelector(".icon-eye-off");
+      if (iconEye && iconEyeOff) {
+        iconEye.style.display = isPassword ? "none" : "block";
+        iconEyeOff.style.display = isPassword ? "block" : "none";
+      }
+    });
+  }
+
+  // Handle Login submission
+  if (formAuth) {
+    formAuth.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      initAudioContext();
+
+      const inputVal = (passInput.value || "").trim();
+      if (!inputVal) {
+        showAuthError("Please enter the administrator passcode.");
+        return;
+      }
+
+      btnLogin.disabled = true;
+
+      const isValid = await verifyAdminPassword(inputVal);
+
+      if (isValid) {
+        setAdminAuthenticated(true);
+        updateAdminAuthStateUI();
+        btnLogin.disabled = false;
+      } else {
+        btnLogin.disabled = false;
+        showAuthError("Incorrect password. Access denied.");
+        if (lockCard) {
+          lockCard.classList.remove("lock-shake");
+          void lockCard.offsetWidth; // Trigger reflow
+          lockCard.classList.add("lock-shake");
+        }
+        passInput.select();
+      }
+    });
+  }
+
+  function showAuthError(msg) {
+    if (errorText) {
+      errorText.textContent = msg;
+      errorText.style.display = "block";
+    }
+  }
+
+  // Handle Lock / Logout Button
+  if (btnLock) {
+    btnLock.addEventListener("click", () => {
+      setAdminAuthenticated(false);
+      updateAdminAuthStateUI();
+    });
+  }
 }
 
 // Real-Time Listener to Firestore `event_registrations`
