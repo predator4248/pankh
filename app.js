@@ -768,10 +768,21 @@ async function startScanner(cameraId) {
       html5QrScanner = new Html5Qrcode("qr-reader");
     }
 
+    // Responsive dynamic QR Box: automatically adapts to mobile/tablet/desktop screen sizes
+    const qrboxFunction = (viewfinderWidth, viewfinderHeight) => {
+      const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+      const edgeSize = Math.max(150, Math.min(260, Math.floor(minEdge * 0.70)));
+      return {
+        width: edgeSize,
+        height: edgeSize
+      };
+    };
+
     const config = {
-      fps: 10,
-      qrbox: { width: 220, height: 220 },
-      aspectRatio: 1.0
+      fps: 15,
+      qrbox: qrboxFunction,
+      aspectRatio: 1.0,
+      disableFlip: false
     };
 
     const targetCamera = cameraId ? cameraId : { facingMode: "environment" };
