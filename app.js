@@ -52,8 +52,8 @@ let isDemoMode = !isConfigured;
    2. ADMIN ACCESS CONTROL CONFIGURATION (METHOD B)
    You can change your secret admin password right here at any time!
    ========================================================================== */
-export const ADMIN_SECRET_PASSWORD = "pankh@admin2026";
-export const ADMIN_PASSWORD_HASH = "c90c7f41f158f08b3e3244a7425d382df1e148e862f9451ccf7311ed155c213f";
+export const ADMIN_SECRET_PASSWORD = "pankh4248";
+export const ADMIN_PASSWORD_HASH = "fc95397b8bdbb5e7ffa9d71c24bd5db4f172bab5b4371993f886162b1475d014";
 const ADMIN_AUTH_SESSION_KEY = "pankh_admin_authenticated";
 
 async function computeSha256Hex(str) {
