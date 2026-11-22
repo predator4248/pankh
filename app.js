@@ -358,6 +358,14 @@ const DataService = {
     }
   },
 
+  async deleteStall(docId) {
+    if (!isDemoMode && db) {
+      await deleteDoc(doc(db, "stall_registrations", docId));
+    } else {
+      saveLocalStalls(getLocalStalls().filter(item => item.id !== docId));
+    }
+  },
+
   listenStalls(callback) {
     if (!isDemoMode && db) {
       return onSnapshot(collection(db, "stall_registrations"), (snapshot) => {
@@ -774,7 +782,6 @@ function setupStallForm() {
   const phoneInput = document.getElementById("stall-phone");
   const emailInput = document.getElementById("stall-email");
   const orgInput = document.getElementById("stall-organization");
-  const needsInput = document.getElementById("stall-requirements");
   const submitBtn = document.getElementById("btn-submit-stall");
   const formCard = document.getElementById("stall-form-card");
   const successCard = document.getElementById("stall-success-card");
@@ -813,8 +820,7 @@ function setupStallForm() {
       contact_name: contactInput.value.trim(),
       phone: normalizeIndianPhone(phoneInput.value),
       email: emailInput.value.trim(),
-      organization: orgInput.value.trim(),
-      requirements: needsInput.value.trim()
+      organization: orgInput.value.trim()
     };
 
     submitBtn.disabled = true;
@@ -1340,8 +1346,28 @@ function renderStallsTable() {
 
     addCell(stall.email);
     addCell(stall.organization);
-    addCell(stall.requirements, "stall-about-cell");
     addCell(new Date(stallTimeMs(stall)).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }));
+
+    const actionsCell = tr.insertCell();
+    actionsCell.innerHTML = `
+      <div class="table-actions">
+        <button class="btn-table-icon btn-del" title="Delete Stall Registration">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      </div>
+    `;
+    actionsCell.querySelector("button").addEventListener("click", async () => {
+      if (!confirm(`Are you sure you want to delete the stall registration "${stall.stall_name}" (${stall.contact_name})?`)) return;
+      try {
+        await DataService.deleteStall(stall.id);
+      } catch (err) {
+        console.error("Stall delete error:", err);
+        alert("Failed to delete stall registration. Error: " + err.message);
+      }
+    });
   });
 }
 
@@ -1358,10 +1384,10 @@ function exportStallsToCSV() {
     return `"${s.replace(/"/g, '""')}"`;
   };
 
-  const headers = ["Stall_Name", "Category", "Description", "Contact_Name", "Phone", "Email", "Organization", "Requirements", "Registered_At"];
+  const headers = ["Stall_Name", "Category", "Description", "Contact_Name", "Phone", "Email", "Organization", "Registered_At"];
   const rows = allStalls.map(s => [
     s.stall_name, s.category, s.description, s.contact_name, s.phone,
-    s.email, s.organization, s.requirements, new Date(stallTimeMs(s)).toLocaleString()
+    s.email, s.organization, new Date(stallTimeMs(s)).toLocaleString()
   ].map(csvField).join(","));
 
   const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });

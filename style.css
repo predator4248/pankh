@@ -1892,3 +1892,16 @@ tr.row-year-4 td {
     display: inline;
   }
 }
+
+/* Keep the stall Actions (delete) column pinned in view when the table scrolls sideways */
+#stalls-table th:last-child,
+#stalls-table td:last-child {
+  position: sticky;
+  right: 0;
+  background: var(--bg-card);
+  box-shadow: -8px 0 8px -8px rgba(15, 23, 42, 0.18);
+}
+
+#stalls-table th:last-child {
+  background: #f8fafc;
+}
