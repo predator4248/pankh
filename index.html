@@ -49,6 +49,16 @@
           <span>Student Registration</span>
         </button>
 
+        <button class="nav-tab" id="tab-stall" data-target="view-stall" role="tab" aria-selected="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 7l4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+            <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
+            <path d="M2 7h20v3a2 2 0 0 1-2 2 2.7 2.7 0 0 1-2-1 2.7 2.7 0 0 1-4 0 2.7 2.7 0 0 1-4 0 2.7 2.7 0 0 1-4 0 2.7 2.7 0 0 1-2 1 2 2 0 0 1-2-2z"/>
+          </svg>
+          <span>Stall Registration</span>
+        </button>
+
         <button class="nav-tab" id="tab-scanner" data-target="view-scanner" role="tab" aria-selected="false">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="7" height="7"/>
@@ -304,14 +314,277 @@
     </section>
 
     <!-- ========================================== -->
+    <!-- SECTION 1B: STALL REGISTRATION VIEW       -->
+    <!-- ========================================== -->
+    <section class="app-view" id="view-stall">
+      <div class="container container-sm">
+
+        <!-- Stall Registration Form Card -->
+        <div class="card form-card" id="stall-form-card">
+          <div class="card-header">
+            <div class="pill-tag">Stall Booking</div>
+            <h2 class="card-title">Stall Registration</h2>
+            <p class="card-desc">Want to set up a stall at the event? Tell us about it and the organizing team will get in touch with you.</p>
+          </div>
+
+          <form id="stall-registration-form" novalidate>
+            <!-- Stall Name -->
+            <div class="form-group">
+              <label for="stall-name" class="form-label">
+                Stall Name <span class="required">*</span>
+              </label>
+              <div class="input-wrapper">
+                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                  <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
+                <input
+                  type="text"
+                  id="stall-name"
+                  class="form-input"
+                  placeholder="e.g. Chai Point Express"
+                  autocomplete="off"
+                  maxlength="60"
+                  required
+                />
+              </div>
+              <span class="form-error" id="error-stall-name">Please enter your stall's name.</span>
+            </div>
+
+            <!-- Stall Category -->
+            <div class="form-group">
+              <label for="stall-category" class="form-label">
+                Stall Category <span class="required">*</span>
+              </label>
+              <div class="select-wrapper">
+                <select id="stall-category" class="form-select" required>
+                  <option value="" disabled selected>Select Category</option>
+                  <option value="Food & Beverages">Food & Beverages</option>
+                  <option value="Games & Activities">Games & Activities</option>
+                  <option value="Art & Handicrafts">Art & Handicrafts</option>
+                  <option value="Clothing & Accessories">Clothing & Accessories</option>
+                  <option value="Tech & Gadgets">Tech & Gadgets</option>
+                  <option value="Books & Stationery">Books & Stationery</option>
+                  <option value="Services">Services (Henna, Photo Booth, etc.)</option>
+                  <option value="Other">Other</option>
+                </select>
+                <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+              <span class="form-error" id="error-stall-category">Please select a category.</span>
+            </div>
+
+            <!-- Stall Description -->
+            <div class="form-group">
+              <label for="stall-description" class="form-label">
+                What is your stall about? <span class="required">*</span>
+              </label>
+              <textarea
+                id="stall-description"
+                class="form-input form-textarea"
+                placeholder="Describe what you'll sell, showcase, or offer at your stall..."
+                maxlength="500"
+                rows="4"
+                required
+              ></textarea>
+              <span class="form-hint">A few lines is enough (max 500 characters).</span>
+              <span class="form-error" id="error-stall-description">Please tell us a little about your stall (at least 10 characters).</span>
+            </div>
+
+            <!-- Contact Person Name -->
+            <div class="form-group">
+              <label for="stall-contact-name" class="form-label">
+                Your Name <span class="required">*</span>
+              </label>
+              <div class="input-wrapper">
+                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <input
+                  type="text"
+                  id="stall-contact-name"
+                  class="form-input"
+                  placeholder="e.g. Priya Nair"
+                  autocomplete="name"
+                  maxlength="50"
+                  required
+                />
+              </div>
+              <span class="form-error" id="error-stall-contact-name">Please enter your name.</span>
+            </div>
+
+            <div class="form-grid-2">
+              <!-- Phone -->
+              <div class="form-group">
+                <label for="stall-phone" class="form-label">
+                  Phone Number <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                  <input
+                    type="tel"
+                    id="stall-phone"
+                    class="form-input"
+                    placeholder="e.g. 98765 43210"
+                    autocomplete="tel"
+                    inputmode="tel"
+                    maxlength="16"
+                    required
+                  />
+                </div>
+                <span class="form-error" id="error-stall-phone">Please enter a valid 10-digit mobile number.</span>
+              </div>
+
+              <!-- Email -->
+              <div class="form-group">
+                <label for="stall-email" class="form-label">Email</label>
+                <div class="input-wrapper">
+                  <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <polyline points="22 6 12 13 2 6"/>
+                  </svg>
+                  <input
+                    type="email"
+                    id="stall-email"
+                    class="form-input"
+                    placeholder="Optional"
+                    autocomplete="email"
+                    maxlength="80"
+                  />
+                </div>
+                <span class="form-error" id="error-stall-email">Please enter a valid email address.</span>
+              </div>
+            </div>
+
+            <!-- Organization -->
+            <div class="form-group">
+              <label for="stall-organization" class="form-label">College / Club / Business Name</label>
+              <input
+                type="text"
+                id="stall-organization"
+                class="form-input"
+                placeholder="Optional — e.g. Rotaract Club"
+                maxlength="80"
+              />
+            </div>
+
+            <!-- Requirements -->
+            <div class="form-group">
+              <label for="stall-requirements" class="form-label">Anything you'll need from us?</label>
+              <textarea
+                id="stall-requirements"
+                class="form-input form-textarea"
+                placeholder="Optional — e.g. power socket, 2 tables, 4 chairs"
+                maxlength="300"
+                rows="2"
+              ></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-stall">
+              <span class="btn-text">Register Stall</span>
+              <span class="btn-spinner" style="display: none;"></span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Stall Registration Success Card (Hidden initially) -->
+        <div class="card stall-success-card" id="stall-success-card" style="display: none;">
+          <div class="stall-success-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <h2 class="lock-title">Stall Registered!</h2>
+          <p class="lock-subtitle">
+            Thanks, <strong id="stall-success-contact">there</strong>. We've received the details for
+            <strong id="stall-success-name">your stall</strong>. The organizing team will contact you on
+            <strong id="stall-success-phone">your phone</strong> soon.
+          </p>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-register-another-stall">
+            Register Another Stall
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
     <!-- SECTION 2: VOLUNTEER SCANNER VIEW         -->
     <!-- ========================================== -->
     <section class="app-view" id="view-scanner">
       <div class="container container-sm">
-        
-        <div class="card scanner-card">
+
+        <!-- Volunteer Password Gatekeeper (Lock Screen) -->
+        <div class="admin-lock-wrapper" id="scanner-lock-screen">
+          <div class="card admin-lock-card">
+            <div class="lock-icon-badge">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                <circle cx="12" cy="16" r="1.5" fill="currentColor"/>
+              </svg>
+            </div>
+            <h2 class="lock-title">Volunteer Access Only</h2>
+            <p class="lock-subtitle">
+              Enter the volunteer passcode to open the gate check-in scanner.
+            </p>
+
+            <form id="form-scanner-auth" class="lock-form" novalidate>
+              <div class="form-group">
+                <label for="scanner-pass-input" class="form-label">Passcode</label>
+                <div class="password-input-wrap">
+                  <input
+                    type="password"
+                    id="scanner-pass-input"
+                    class="form-input"
+                    placeholder="Enter passcode..."
+                    autocomplete="current-password"
+                    required
+                  />
+                  <button type="button" class="btn-toggle-password" id="btn-toggle-scanner-pass" title="Show/Hide Password" aria-label="Toggle password visibility">
+                    <svg class="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg class="icon-eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  </button>
+                </div>
+                <span class="lock-error-text" id="scanner-pass-error" style="display: none;"></span>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-scanner-login">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                  <polyline points="10 17 15 12 10 7"/>
+                  <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                <span>Unlock Scanner</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Authenticated Scanner Content (Initially Hidden) -->
+        <div class="card scanner-card" id="scanner-authenticated-content" style="display: none;">
           <div class="card-header">
-            <div class="pill-tag pill-success">Gate Check-In Portal</div>
+            <div class="scanner-header-row">
+              <div class="pill-tag pill-success">Gate Check-In Portal</div>
+              <button class="btn btn-outline btn-sm btn-lock-dashboard" id="btn-scanner-lock" title="Lock the Volunteer Scanner">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span>Lock</span>
+              </button>
+            </div>
             <h2 class="card-title">Volunteer QR Scanner</h2>
             <p class="card-desc">Scan attendee QR passes at the entrance. Each pass is valid for one-time admission.</p>
           </div>
@@ -720,11 +993,79 @@
             <span class="records-counter" id="table-record-count">Showing 0 of 0 records</span>
           </div>
         </div>
+
+          <!-- Stall Registrations Table -->
+          <div class="card dashboard-card stall-dashboard-card">
+            <div class="dashboard-toolbar">
+              <div class="toolbar-left">
+                <h2 class="section-title">Stall Registrations</h2>
+                <span class="live-pulse-badge">
+                  <span class="pulse-dot"></span> <span id="stall-count-label">0 stalls</span>
+                </span>
+              </div>
+
+              <div class="toolbar-right">
+                <button class="btn btn-secondary btn-sm" id="btn-export-stalls-csv" title="Export stall registrations to CSV">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  <span>Export CSV</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table" id="stalls-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Stall Name</th>
+                    <th>Category</th>
+                    <th>About</th>
+                    <th>Contact Person</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>College / Org</th>
+                    <th>Needs</th>
+                    <th>Registered</th>
+                  </tr>
+                </thead>
+                <tbody id="stalls-tbody">
+                  <tr>
+                    <td colspan="10" class="table-loading-row">
+                      <span>No stall registrations yet.</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div> <!-- End #admin-authenticated-content -->
 
       </div>
     </section>
   </main>
+
+  <!-- Contact / Queries Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <span class="footer-question">Any queries? Call us:</span>
+      <a class="footer-phone" href="tel:+918595693949">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        <span>+91 85956 93949</span>
+      </a>
+      <a class="footer-phone" href="tel:+919945515577">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        <span>+91 99455 15577</span>
+      </a>
+    </div>
+  </footer>
 
   <!-- Pass Modal for Admin inspection -->
   <div class="modal-backdrop" id="admin-pass-modal" style="display: none;">

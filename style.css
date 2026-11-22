@@ -1788,3 +1788,107 @@ tr.row-year-4 td {
   color: var(--danger-dark) !important;
 }
 
+.scanner-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* ==========================================================================
+   STALL REGISTRATION
+   ========================================================================== */
+.form-textarea {
+  resize: vertical;
+  min-height: 3rem;
+  line-height: 1.5;
+}
+
+.stall-success-card {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  animation: fade-in 0.35s ease-out;
+}
+
+.stall-success-icon {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 1.25rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--success-light);
+  color: var(--success-dark);
+  border: 2px solid #a7f3d0;
+  border-radius: 50%;
+}
+
+.stall-dashboard-card {
+  margin-top: 1.5rem;
+}
+
+.stall-about-cell {
+  min-width: 220px;
+  max-width: 320px;
+  white-space: pre-wrap;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.stall-phone-link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   CONTACT / QUERIES FOOTER
+   ========================================================================== */
+.app-footer {
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+}
+
+.footer-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.footer-question {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.footer-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.footer-phone:hover {
+  text-decoration: underline;
+}
+
+/* Four nav tabs get crowded on tablets and small laptops: show only the active tab's label */
+@media (max-width: 1100px) {
+  .nav-tab span {
+    display: none;
+  }
+
+  .nav-tab.active span {
+    display: inline;
+  }
+}

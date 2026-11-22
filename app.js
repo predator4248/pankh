@@ -49,12 +49,20 @@ let db = null;
 let isDemoMode = !isConfigured;
 
 /* ==========================================================================
-   2. ADMIN ACCESS CONTROL CONFIGURATION (METHOD B)
-   You can change your secret admin password right here at any time!
+   2. ADMIN & SCANNER ACCESS CONTROL CONFIGURATION (METHOD B)
+   You can change the secret passwords right here at any time!
+   (If you change one, also update or remove its matching hash.)
    ========================================================================== */
 export const ADMIN_SECRET_PASSWORD = "pankh4248";
 export const ADMIN_PASSWORD_HASH = "fc95397b8bdbb5e7ffa9d71c24bd5db4f172bab5b4371993f886162b1475d014";
-const ADMIN_AUTH_SESSION_KEY = "pankh_admin_authenticated";
+export const SCANNER_SECRET_PASSWORD = "pankh@4248";
+export const SCANNER_PASSWORD_HASH = "351e7c4d85b33a2aed75945588df0c35939f7b74d5ca648c0b1af580dad18c17";
+
+// Each gated view has its own password and its own login session
+const ACCESS_GATES = {
+  admin: { password: ADMIN_SECRET_PASSWORD, hash: ADMIN_PASSWORD_HASH, sessionKey: "pankh_admin_authenticated" },
+  scanner: { password: SCANNER_SECRET_PASSWORD, hash: SCANNER_PASSWORD_HASH, sessionKey: "pankh_scanner_authenticated" }
+};
 
 async function computeSha256Hex(str) {
   try {
@@ -68,23 +76,24 @@ async function computeSha256Hex(str) {
   }
 }
 
-async function verifyAdminPassword(input) {
+async function verifyPassword(gate, input) {
+  const { password, hash } = ACCESS_GATES[gate];
   const trimmed = (input || "").trim();
   if (!trimmed) return false;
-  if (trimmed === ADMIN_SECRET_PASSWORD) return true;
-  const hash = await computeSha256Hex(trimmed);
-  return hash === ADMIN_PASSWORD_HASH;
+  if (trimmed === password) return true;
+  return (await computeSha256Hex(trimmed)) === hash;
 }
 
-function isAdminAuthenticated() {
-  return sessionStorage.getItem(ADMIN_AUTH_SESSION_KEY) === "true";
+function isAuthenticated(gate) {
+  return sessionStorage.getItem(ACCESS_GATES[gate].sessionKey) === "true";
 }
 
-function setAdminAuthenticated(status) {
+function setAuthenticated(gate, status) {
+  const key = ACCESS_GATES[gate].sessionKey;
   if (status) {
-    sessionStorage.setItem(ADMIN_AUTH_SESSION_KEY, "true");
+    sessionStorage.setItem(key, "true");
   } else {
-    sessionStorage.removeItem(ADMIN_AUTH_SESSION_KEY);
+    sessionStorage.removeItem(key);
   }
 }
 
@@ -188,6 +197,22 @@ function getLocalRegistrations() {
 function saveLocalRegistrations(list) {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
   demoListeners.forEach(cb => cb(list));
+}
+
+const LOCAL_STALLS_KEY = "pankh_stall_registrations";
+const demoStallListeners = [];
+
+function getLocalStalls() {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_STALLS_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalStalls(list) {
+  localStorage.setItem(LOCAL_STALLS_KEY, JSON.stringify(list));
+  demoStallListeners.forEach(cb => cb(list));
 }
 
 // Unified Database Service
@@ -311,6 +336,43 @@ const DataService = {
         if (i !== -1) demoListeners.splice(i, 1);
       };
     }
+  },
+
+  async addStall(docData) {
+    if (!isDemoMode && db) {
+      const docRef = await addDoc(collection(db, "stall_registrations"), {
+        ...docData,
+        created_at: serverTimestamp()
+      });
+      return docRef.id;
+    } else {
+      const list = getLocalStalls();
+      const newDoc = {
+        id: "local_" + Math.random().toString(36).substr(2, 9),
+        ...docData,
+        created_at: new Date().toISOString()
+      };
+      list.push(newDoc);
+      saveLocalStalls(list);
+      return newDoc.id;
+    }
+  },
+
+  listenStalls(callback) {
+    if (!isDemoMode && db) {
+      return onSnapshot(collection(db, "stall_registrations"), (snapshot) => {
+        callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }, (err) => {
+        console.error("Firestore stall listener error:", err);
+      });
+    } else {
+      demoStallListeners.push(callback);
+      callback(getLocalStalls());
+      return () => {
+        const i = demoStallListeners.indexOf(callback);
+        if (i !== -1) demoStallListeners.splice(i, 1);
+      };
+    }
   }
 };
 
@@ -318,6 +380,7 @@ const DataService = {
    4. APPLICATION STATE & HELPERS
    ========================================================================== */
 let allRegistrations = [];
+let allStalls = [];
 let currentFilterYear = "all";
 let currentFilterStatus = "all";
 let currentSearchTerm = "";
@@ -345,6 +408,27 @@ function validateUSN(usn) {
   return USN_REGEX.test(trimmed) || FLEXIBLE_USN_REGEX.test(trimmed);
 }
 
+// Toggle a form field's error state (shows the .form-error inside its .form-group)
+function validateField(elem, isValid, errorId) {
+  const group = elem.closest(".form-group");
+  if (!isValid) {
+    group.classList.add("has-error");
+    elem.classList.add("invalid");
+  } else {
+    group.classList.remove("has-error");
+    elem.classList.remove("invalid");
+  }
+  return isValid;
+}
+
+// Indian mobile number: 10 digits starting 6-9, optional +91 / 0 prefix, spaces or dashes allowed
+function normalizeIndianPhone(raw) {
+  const digits = (raw || "").replace(/[\s-]/g, "").replace(/^(\+91|91|0)(?=\d{10}$)/, "");
+  return /^[6-9]\d{9}$/.test(digits) ? digits : null;
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // Format Year label
 function formatYearName(year) {
   const y = Number(year);
@@ -364,9 +448,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupConnectionStatus();
   setupNavigation();
   setupRegistrationForm();
+  setupStallForm();
   setupScannerView();
   setupAdminDashboard();
-  setupAdminAuth();
+  setupAuthGate("admin", updateAdminAuthStateUI);
+  setupAuthGate("scanner", updateScannerAuthStateUI);
   listenToDatabase();
 
   // Listen to audio unlocks on initial click
@@ -401,20 +487,18 @@ function setupConnectionStatus() {
   }
 }
 
-// Update Admin View Visibility based on Session Auth State
-function updateAdminAuthStateUI() {
-  const lockScreen = document.getElementById("admin-lock-screen");
-  const authContent = document.getElementById("admin-authenticated-content");
-  const passInput = document.getElementById("admin-pass-input");
-  const errorText = document.getElementById("admin-pass-error");
+// Show either the lock screen or the protected content for a gated view ("admin" or "scanner")
+function toggleLockScreen(prefix, unlocked) {
+  const lockScreen = document.getElementById(`${prefix}-lock-screen`);
+  const authContent = document.getElementById(`${prefix}-authenticated-content`);
+  const passInput = document.getElementById(`${prefix}-pass-input`);
+  const errorText = document.getElementById(`${prefix}-pass-error`);
 
   if (!lockScreen || !authContent) return;
 
-  if (isAdminAuthenticated()) {
+  if (unlocked) {
     lockScreen.style.display = "none";
     authContent.style.display = "block";
-    updateDashboardCounters();
-    renderRegistrationsTable();
   } else {
     lockScreen.style.display = "flex";
     authContent.style.display = "none";
@@ -426,6 +510,28 @@ function updateAdminAuthStateUI() {
       errorText.style.display = "none";
       errorText.textContent = "";
     }
+  }
+}
+
+// Update Admin View Visibility based on Session Auth State
+function updateAdminAuthStateUI() {
+  const unlocked = isAuthenticated("admin");
+  toggleLockScreen("admin", unlocked);
+  if (unlocked) {
+    updateDashboardCounters();
+    renderRegistrationsTable();
+  }
+}
+
+// Update Volunteer Scanner Visibility
+function updateScannerAuthStateUI() {
+  const unlocked = isAuthenticated("scanner");
+  toggleLockScreen("scanner", unlocked);
+  if (unlocked) {
+    // Don't auto-start camera until user permits or clicks start, but prepare cameras
+    prepareCameraList();
+  } else if (isScannerRunning) {
+    stopScanner();
   }
 }
 
@@ -450,10 +556,9 @@ function setupNavigation() {
       updateAdminAuthStateUI();
     }
 
-    // Camera auto-handling
+    // Scanner auth state + camera auto-handling
     if (targetId === "view-scanner") {
-      // Don't auto-start camera until user permits or clicks start, but prepare cameras
-      prepareCameraList();
+      updateScannerAuthStateUI();
     } else {
       if (isScannerRunning) {
         stopScanner();
@@ -476,7 +581,9 @@ function setupNavigation() {
     const path = (window.location.pathname || "").replace(/^\//, "").toLowerCase();
     const route = hash || path;
 
-    if (route.includes("scanner")) {
+    if (route.includes("stall")) {
+      switchTab("view-stall");
+    } else if (route.includes("scanner")) {
       switchTab("view-scanner");
     } else if (route.includes("admin")) {
       switchTab("view-admin");
@@ -523,19 +630,6 @@ function setupRegistrationForm() {
   branchSelect.addEventListener("change", () => {
     validateField(branchSelect, !!branchSelect.value, "error-branch");
   });
-
-  function validateField(elem, isValid, errorId) {
-    const group = elem.closest(".form-group");
-    const errorElem = document.getElementById(errorId);
-    if (!isValid) {
-      group.classList.add("has-error");
-      elem.classList.add("invalid");
-    } else {
-      group.classList.remove("has-error");
-      elem.classList.remove("invalid");
-    }
-    return isValid;
-  }
 
   // Handle Form Submission
   form.addEventListener("submit", async (e) => {
@@ -663,6 +757,92 @@ function setupRegistrationForm() {
   // Register another student button
   btnRegisterAnother.addEventListener("click", () => {
     ticketCard.style.display = "none";
+    formCard.style.display = "block";
+    formCard.scrollIntoView({ behavior: "smooth" });
+  });
+}
+
+/* ==========================================================================
+   6B. SECTION 2B: STALL REGISTRATION LOGIC
+   ========================================================================== */
+function setupStallForm() {
+  const form = document.getElementById("stall-registration-form");
+  const nameInput = document.getElementById("stall-name");
+  const categorySelect = document.getElementById("stall-category");
+  const descInput = document.getElementById("stall-description");
+  const contactInput = document.getElementById("stall-contact-name");
+  const phoneInput = document.getElementById("stall-phone");
+  const emailInput = document.getElementById("stall-email");
+  const orgInput = document.getElementById("stall-organization");
+  const needsInput = document.getElementById("stall-requirements");
+  const submitBtn = document.getElementById("btn-submit-stall");
+  const formCard = document.getElementById("stall-form-card");
+  const successCard = document.getElementById("stall-success-card");
+  const btnAnother = document.getElementById("btn-register-another-stall");
+
+  const checks = [
+    [nameInput, () => nameInput.value.trim().length >= 2, "error-stall-name"],
+    [categorySelect, () => !!categorySelect.value, "error-stall-category"],
+    [descInput, () => descInput.value.trim().length >= 10, "error-stall-description"],
+    [contactInput, () => contactInput.value.trim().length >= 2, "error-stall-contact-name"],
+    [phoneInput, () => !!normalizeIndianPhone(phoneInput.value), "error-stall-phone"],
+    [emailInput, () => !emailInput.value.trim() || EMAIL_REGEX.test(emailInput.value.trim()), "error-stall-email"]
+  ];
+
+  // Re-validate a field as soon as the user edits it after a failed submit
+  checks.forEach(([elem, isValid, errorId]) => {
+    elem.addEventListener(elem.tagName === "SELECT" ? "change" : "input", () => {
+      if (elem.classList.contains("invalid")) validateField(elem, isValid(), errorId);
+    });
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const results = checks.map(([elem, isValid, errorId]) => validateField(elem, isValid(), errorId));
+    if (results.includes(false)) {
+      const firstInvalid = form.querySelector(".invalid");
+      if (firstInvalid) firstInvalid.focus();
+      return;
+    }
+
+    const stallData = {
+      stall_name: nameInput.value.trim(),
+      category: categorySelect.value,
+      description: descInput.value.trim(),
+      contact_name: contactInput.value.trim(),
+      phone: normalizeIndianPhone(phoneInput.value),
+      email: emailInput.value.trim(),
+      organization: orgInput.value.trim(),
+      requirements: needsInput.value.trim()
+    };
+
+    submitBtn.disabled = true;
+    submitBtn.querySelector(".btn-text").textContent = "Submitting...";
+    submitBtn.querySelector(".btn-spinner").style.display = "inline-block";
+
+    try {
+      await DataService.addStall(stallData);
+
+      document.getElementById("stall-success-contact").textContent = stallData.contact_name;
+      document.getElementById("stall-success-name").textContent = stallData.stall_name;
+      document.getElementById("stall-success-phone").textContent = stallData.phone;
+      formCard.style.display = "none";
+      successCard.style.display = "block";
+      successCard.scrollIntoView({ behavior: "smooth" });
+      form.reset();
+    } catch (err) {
+      console.error("Stall registration error:", err);
+      alert("Failed to submit stall registration. Error: " + err.message);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.querySelector(".btn-text").textContent = "Register Stall";
+      submitBtn.querySelector(".btn-spinner").style.display = "none";
+    }
+  });
+
+  btnAnother.addEventListener("click", () => {
+    successCard.style.display = "none";
     formCard.style.display = "block";
     formCard.scrollIntoView({ behavior: "smooth" });
   });
@@ -834,6 +1014,7 @@ function onScanFailure(error) {
 
 // Core Verification Workflow
 async function processScannedCode(rawCode) {
+  if (!isAuthenticated("scanner")) return;
   isProcessingScan = true;
   initAudioContext();
 
@@ -993,6 +1174,7 @@ function setupAdminDashboard() {
 
   // Export to CSV
   btnExport.addEventListener("click", exportTableToCSV);
+  document.getElementById("btn-export-stalls-csv").addEventListener("click", exportStallsToCSV);
 
   // Quick Sample Data Generator
   btnSeed.addEventListener("click", seedSampleData);
@@ -1017,15 +1199,16 @@ function setupAdminDashboard() {
   });
 }
 
-// Admin Authentication Controller (Method B)
-function setupAdminAuth() {
-  const formAuth = document.getElementById("form-admin-auth");
-  const passInput = document.getElementById("admin-pass-input");
-  const btnToggle = document.getElementById("btn-toggle-admin-pass");
-  const errorText = document.getElementById("admin-pass-error");
-  const lockCard = document.querySelector(".admin-lock-card");
-  const btnLock = document.getElementById("btn-admin-lock");
-  const btnLogin = document.getElementById("btn-admin-login");
+// Password Lock Screen Controller (Method B) for a gated view ("admin" or "scanner").
+// Each view has its own password and session (see ACCESS_GATES).
+function setupAuthGate(prefix, onAuthChange) {
+  const formAuth = document.getElementById(`form-${prefix}-auth`);
+  const passInput = document.getElementById(`${prefix}-pass-input`);
+  const btnToggle = document.getElementById(`btn-toggle-${prefix}-pass`);
+  const errorText = document.getElementById(`${prefix}-pass-error`);
+  const lockCard = formAuth ? formAuth.closest(".admin-lock-card") : null;
+  const btnLock = document.getElementById(`btn-${prefix}-lock`);
+  const btnLogin = document.getElementById(`btn-${prefix}-login`);
 
   // Show/Hide password toggle
   if (btnToggle && passInput) {
@@ -1049,17 +1232,17 @@ function setupAdminAuth() {
 
       const inputVal = (passInput.value || "").trim();
       if (!inputVal) {
-        showAuthError("Please enter the administrator passcode.");
+        showAuthError("Please enter the passcode.");
         return;
       }
 
       btnLogin.disabled = true;
 
-      const isValid = await verifyAdminPassword(inputVal);
+      const isValid = await verifyPassword(prefix, inputVal);
 
       if (isValid) {
-        setAdminAuthenticated(true);
-        updateAdminAuthStateUI();
+        setAuthenticated(prefix, true);
+        onAuthChange();
         btnLogin.disabled = false;
       } else {
         btnLogin.disabled = false;
@@ -1084,8 +1267,8 @@ function setupAdminAuth() {
   // Handle Lock / Logout Button
   if (btnLock) {
     btnLock.addEventListener("click", () => {
-      setAdminAuthenticated(false);
-      updateAdminAuthStateUI();
+      setAuthenticated(prefix, false);
+      onAuthChange();
     });
   }
 }
@@ -1100,6 +1283,96 @@ function listenToDatabase() {
     // Check for incoming duplicate events from other devices in real-time!
     checkForDuplicateAlerts(records, docChanges);
   });
+
+  DataService.listenStalls((records) => {
+    allStalls = records.sort((a, b) => stallTimeMs(b) - stallTimeMs(a));
+    renderStallsTable();
+  });
+}
+
+// Firestore Timestamp (live mode) or ISO string (demo mode) -> epoch ms
+function stallTimeMs(stall) {
+  const t = stall.created_at;
+  if (!t) return Date.now(); // serverTimestamp() not yet resolved on the local write
+  if (typeof t.toMillis === "function") return t.toMillis();
+  return new Date(t).getTime() || 0;
+}
+
+// Admin: Stall Registrations Table (built with textContent so submitted text can't inject HTML)
+function renderStallsTable() {
+  const tbody = document.getElementById("stalls-tbody");
+  const countLabel = document.getElementById("stall-count-label");
+  if (!tbody) return;
+
+  countLabel.textContent = `${allStalls.length} ${allStalls.length === 1 ? "stall" : "stalls"}`;
+  tbody.replaceChildren();
+
+  if (allStalls.length === 0) {
+    const tr = tbody.insertRow();
+    const td = tr.insertCell();
+    td.colSpan = 10;
+    td.className = "table-loading-row";
+    td.textContent = "No stall registrations yet.";
+    return;
+  }
+
+  allStalls.forEach((stall, index) => {
+    const tr = tbody.insertRow();
+    const addCell = (text, className) => {
+      const td = tr.insertCell();
+      td.textContent = text || "—";
+      if (className) td.className = className;
+      return td;
+    };
+
+    addCell(String(index + 1)).style.fontWeight = "700";
+    addCell(stall.stall_name).style.fontWeight = "700";
+    addCell(stall.category);
+    addCell(stall.description, "stall-about-cell");
+    addCell(stall.contact_name);
+
+    const phoneCell = tr.insertCell();
+    const phoneLink = document.createElement("a");
+    phoneLink.href = `tel:+91${stall.phone}`;
+    phoneLink.className = "stall-phone-link";
+    phoneLink.textContent = stall.phone;
+    phoneCell.appendChild(phoneLink);
+
+    addCell(stall.email);
+    addCell(stall.organization);
+    addCell(stall.requirements, "stall-about-cell");
+    addCell(new Date(stallTimeMs(stall)).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }));
+  });
+}
+
+function exportStallsToCSV() {
+  if (allStalls.length === 0) {
+    alert("No stall registrations to export.");
+    return;
+  }
+
+  // Quote every field, double inner quotes, and neutralize spreadsheet formulas (=, +, -, @)
+  const csvField = (value) => {
+    let s = String(value ?? "");
+    if (/^[=+\-@]/.test(s)) s = "'" + s;
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+
+  const headers = ["Stall_Name", "Category", "Description", "Contact_Name", "Phone", "Email", "Organization", "Requirements", "Registered_At"];
+  const rows = allStalls.map(s => [
+    s.stall_name, s.category, s.description, s.contact_name, s.phone,
+    s.email, s.organization, s.requirements, new Date(stallTimeMs(s)).toLocaleString()
+  ].map(csvField).join(","));
+
+  const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `stall_registrations_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // Duplicate Detection & Organizer Audio/Visual Alerts
