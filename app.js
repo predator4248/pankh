@@ -623,7 +623,7 @@ function setupNavigation() {
 }
 
 /* ==========================================================================
-   REGISTRATION COUNTDOWN, SEATS LEFT & CLOSED STATE
+   REGISTRATION COUNTDOWN & CLOSED STATE
    ========================================================================== */
 let registrationCount = null; // null until the first count arrives
 
@@ -648,21 +648,6 @@ function updateRegistrationAvailability() {
     document.getElementById("registration-closed-title").textContent = "All seats are taken";
     document.getElementById("registration-closed-message").textContent =
       `All ${MAX_REGISTRATIONS} seats have been filled, so registrations are now closed.`;
-  }
-
-  // Seats-left panel
-  const seatsLeftEl = document.getElementById("seats-left");
-  const captionEl = document.getElementById("seats-caption");
-  const fillEl = document.getElementById("seats-bar-fill");
-  if (registrationCount === null) {
-    seatsLeftEl.textContent = "—";
-    captionEl.textContent = `Limited to ${MAX_REGISTRATIONS} students`;
-    fillEl.style.width = "0%";
-  } else {
-    const taken = Math.min(registrationCount, MAX_REGISTRATIONS);
-    seatsLeftEl.textContent = String(MAX_REGISTRATIONS - taken);
-    captionEl.textContent = `${taken} of ${MAX_REGISTRATIONS} registered`;
-    fillEl.style.width = `${(taken / MAX_REGISTRATIONS) * 100}%`;
   }
 
   document.getElementById("registration-countdown").classList.toggle("is-closed", !!reason);
