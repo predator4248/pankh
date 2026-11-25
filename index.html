@@ -117,14 +117,27 @@
     <!-- SECTION 1: STUDENT REGISTRATION VIEW      -->
     <!-- ========================================== -->
     <section class="app-view active" id="view-register">
-      <div class="container container-sm">
-        
+      <div class="register-layout">
+      <div class="container container-sm register-main">
+
         <!-- Registration Form Card -->
         <div class="card form-card" id="registration-form-card">
           <div class="card-header">
             <div class="pill-tag">College Club Event</div>
             <h2 class="card-title">Student Registration</h2>
             <p class="card-desc">Enter your college details to secure your event pass and generate your entrance QR code.</p>
+          </div>
+
+          <!-- Shown instead of the form once the deadline passes or all seats are taken -->
+          <div class="registration-closed-notice" id="registration-closed-notice" role="status" style="display: none;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <div>
+              <strong id="registration-closed-title">Registrations are closed</strong>
+              <p id="registration-closed-message">Registration for this event has ended.</p>
+            </div>
           </div>
 
           <form id="student-registration-form" novalidate>
@@ -314,6 +327,40 @@
           </div>
         </div>
 
+      </div>
+
+      <!-- Registration countdown & seats left (right column on desktop, top on mobile) -->
+      <aside class="card countdown-card" id="registration-countdown">
+        <div class="countdown-label" id="countdown-label">Registration closes in</div>
+        <div class="countdown-grid">
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cd-days">00</span>
+            <span class="countdown-unit-label">Days</span>
+          </div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cd-hours">00</span>
+            <span class="countdown-unit-label">Hours</span>
+          </div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cd-mins">00</span>
+            <span class="countdown-unit-label">Mins</span>
+          </div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cd-secs">00</span>
+            <span class="countdown-unit-label">Secs</span>
+          </div>
+        </div>
+        <p class="countdown-deadline">Deadline: <strong>30 Nov, 11:59 PM</strong></p>
+
+        <div class="seats-block">
+          <div class="seats-row">
+            <span>Seats left</span>
+            <strong id="seats-left">—</strong>
+          </div>
+          <div class="seats-bar"><div class="seats-bar-fill" id="seats-bar-fill"></div></div>
+          <span class="seats-caption" id="seats-caption">Limited to 600 students</span>
+        </div>
+      </aside>
       </div>
     </section>
 

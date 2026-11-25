@@ -1905,3 +1905,181 @@ tr.row-year-4 td {
 #stalls-table th:last-child {
   background: #f8fafc;
 }
+
+/* ==========================================================================
+   REGISTRATION COUNTDOWN & SEATS LEFT
+   ========================================================================== */
+.register-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 580px) 300px;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: start;
+}
+
+.register-layout .register-main {
+  margin: 0;
+}
+
+.countdown-card {
+  position: sticky;
+  top: 5.5rem;
+  padding: 1.5rem;
+  border-top: 4px solid var(--primary);
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+  margin-bottom: 0.85rem;
+}
+
+.countdown-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--primary-light);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.25rem;
+}
+
+.countdown-value {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-unit-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-top: 0.2rem;
+}
+
+.countdown-deadline {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0.85rem 0 0;
+}
+
+.seats-block {
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.seats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.seats-row strong {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  color: var(--primary);
+}
+
+.seats-bar {
+  height: 8px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin: 0.5rem 0 0.4rem;
+}
+
+.seats-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--primary);
+  border-radius: inherit;
+  transition: width var(--transition-base);
+}
+
+.seats-caption {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Closed state: muted red accents */
+.countdown-card.is-closed {
+  border-top-color: var(--danger);
+}
+
+.countdown-card.is-closed .countdown-label,
+.countdown-card.is-closed .seats-row strong {
+  color: var(--danger-dark);
+}
+
+.countdown-card.is-closed .countdown-unit {
+  background: var(--danger-light);
+}
+
+.countdown-card.is-closed .seats-bar-fill {
+  background: var(--danger);
+}
+
+.registration-closed-notice {
+  align-items: flex-start;
+  gap: 0.85rem;
+  background: var(--danger-light);
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  color: #991b1b;
+}
+
+.registration-closed-notice svg {
+  flex-shrink: 0;
+  color: var(--danger-dark);
+}
+
+.registration-closed-notice strong {
+  display: block;
+  font-size: 0.98rem;
+  margin-bottom: 0.2rem;
+}
+
+.registration-closed-notice p {
+  font-size: 0.86rem;
+  margin: 0;
+}
+
+/* Tablets & phones: stack the countdown above the form */
+@media (max-width: 920px) {
+  .register-layout {
+    grid-template-columns: minmax(0, 580px);
+  }
+
+  .countdown-card {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 400px) {
+  .countdown-card {
+    padding: 1.1rem;
+  }
+
+  .countdown-value {
+    font-size: 1.25rem;
+  }
+}

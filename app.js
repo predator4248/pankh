@@ -18,7 +18,8 @@ import {
   where,
   onSnapshot,
   serverTimestamp,
-  increment
+  increment,
+  getCountFromServer
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 /* ==========================================================================
@@ -96,6 +97,13 @@ function setAuthenticated(gate, status) {
     sessionStorage.removeItem(key);
   }
 }
+
+/* ==========================================================================
+   REGISTRATION WINDOW: SEAT LIMIT & DEADLINE
+   ========================================================================== */
+const MAX_REGISTRATIONS = 600;
+// 30 Nov 2026, 11:59 PM India Standard Time
+const REGISTRATION_DEADLINE = new Date("2026-11-30T23:59:59+05:30");
 
 /* ==========================================================================
    3. AUDIO SYNTHESIZER (WEB AUDIO API)
@@ -235,6 +243,14 @@ const DataService = {
       saveLocalRegistrations(list);
       return newDoc.id;
     }
+  },
+
+  async countRegistrations() {
+    if (!isDemoMode && db) {
+      const snap = await getCountFromServer(collection(db, "event_registrations"));
+      return snap.data().count;
+    }
+    return getLocalRegistrations().length;
   },
 
   async findByUniqueCode(code) {
@@ -456,6 +472,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupConnectionStatus();
   setupNavigation();
   setupRegistrationForm();
+  setupRegistrationCountdown();
   setupStallForm();
   setupScannerView();
   setupAdminDashboard();
@@ -606,6 +623,89 @@ function setupNavigation() {
 }
 
 /* ==========================================================================
+   REGISTRATION COUNTDOWN, SEATS LEFT & CLOSED STATE
+   ========================================================================== */
+let registrationCount = null; // null until the first count arrives
+
+function registrationClosedReason() {
+  if (Date.now() >= REGISTRATION_DEADLINE.getTime()) return "deadline";
+  if (registrationCount !== null && registrationCount >= MAX_REGISTRATIONS) return "full";
+  return null;
+}
+
+function updateRegistrationAvailability() {
+  const reason = registrationClosedReason();
+  const form = document.getElementById("student-registration-form");
+  const notice = document.getElementById("registration-closed-notice");
+
+  form.style.display = reason ? "none" : "";
+  notice.style.display = reason ? "flex" : "none";
+  if (reason === "deadline") {
+    document.getElementById("registration-closed-title").textContent = "Registrations are closed";
+    document.getElementById("registration-closed-message").textContent =
+      "The registration deadline (30 Nov, 11:59 PM) has passed.";
+  } else if (reason === "full") {
+    document.getElementById("registration-closed-title").textContent = "All seats are taken";
+    document.getElementById("registration-closed-message").textContent =
+      `All ${MAX_REGISTRATIONS} seats have been filled, so registrations are now closed.`;
+  }
+
+  // Seats-left panel
+  const seatsLeftEl = document.getElementById("seats-left");
+  const captionEl = document.getElementById("seats-caption");
+  const fillEl = document.getElementById("seats-bar-fill");
+  if (registrationCount === null) {
+    seatsLeftEl.textContent = "—";
+    captionEl.textContent = `Limited to ${MAX_REGISTRATIONS} students`;
+    fillEl.style.width = "0%";
+  } else {
+    const taken = Math.min(registrationCount, MAX_REGISTRATIONS);
+    seatsLeftEl.textContent = String(MAX_REGISTRATIONS - taken);
+    captionEl.textContent = `${taken} of ${MAX_REGISTRATIONS} registered`;
+    fillEl.style.width = `${(taken / MAX_REGISTRATIONS) * 100}%`;
+  }
+
+  document.getElementById("registration-countdown").classList.toggle("is-closed", !!reason);
+}
+
+function setupRegistrationCountdown() {
+  const label = document.getElementById("countdown-label");
+  const units = {
+    days: document.getElementById("cd-days"),
+    hours: document.getElementById("cd-hours"),
+    mins: document.getElementById("cd-mins"),
+    secs: document.getElementById("cd-secs")
+  };
+  const pad = n => String(n).padStart(2, "0");
+  let timer = null;
+  let wasPastDeadline = null;
+
+  function tick() {
+    const msLeft = Math.max(0, REGISTRATION_DEADLINE.getTime() - Date.now());
+    const totalSecs = Math.floor(msLeft / 1000);
+    units.days.textContent = pad(Math.floor(totalSecs / 86400));
+    units.hours.textContent = pad(Math.floor((totalSecs % 86400) / 3600));
+    units.mins.textContent = pad(Math.floor((totalSecs % 3600) / 60));
+    units.secs.textContent = pad(totalSecs % 60);
+
+    const pastDeadline = msLeft === 0;
+    if (pastDeadline !== wasPastDeadline) {
+      wasPastDeadline = pastDeadline;
+      label.textContent = pastDeadline ? "Registration closed" : "Registration closes in";
+      updateRegistrationAvailability();
+    }
+    if (pastDeadline && timer) {
+      clearInterval(timer);
+    }
+  }
+
+  tick();
+  if (!wasPastDeadline) {
+    timer = setInterval(tick, 1000);
+  }
+}
+
+/* ==========================================================================
    6. SECTION 2: STUDENT REGISTRATION LOGIC
    ========================================================================== */
 function setupRegistrationForm() {
@@ -658,6 +758,11 @@ function setupRegistrationForm() {
       return;
     }
 
+    if (registrationClosedReason() === "deadline") {
+      updateRegistrationAvailability();
+      return;
+    }
+
     // Toggle button loading state
     submitBtn.disabled = true;
     submitBtn.querySelector(".btn-text").textContent = "Registering...";
@@ -678,6 +783,14 @@ function setupRegistrationForm() {
         submitBtn.disabled = false;
         submitBtn.querySelector(".btn-text").textContent = "Register & Generate Pass";
         submitBtn.querySelector(".btn-spinner").style.display = "none";
+        return;
+      }
+
+      // Enforce the seat limit with a fresh count from the server
+      registrationCount = await DataService.countRegistrations();
+      if (registrationCount >= MAX_REGISTRATIONS) {
+        updateRegistrationAvailability();
+        alert(`Sorry, all ${MAX_REGISTRATIONS} seats have been taken. Registrations are now closed.`);
         return;
       }
 
@@ -1283,6 +1396,8 @@ function setupAuthGate(prefix, onAuthChange) {
 function listenToDatabase() {
   DataService.listenRegistrations((records, docChanges) => {
     allRegistrations = records;
+    registrationCount = records.length;
+    updateRegistrationAvailability();
     updateDashboardCounters();
     renderRegistrationsTable();
 
